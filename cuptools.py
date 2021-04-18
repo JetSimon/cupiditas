@@ -1,24 +1,25 @@
 from binance.exceptions import BinanceAPIException, BinanceWithdrawException
 from binance.client import Client
+import math
 
 def sortByLowestPriceToBuy(prices):
 
     l = []
     for price in prices:
-        if 'BUSD' in price['symbol']:
+        if 'USDC' in price['symbol']:
             l.append(price)
 
     return sorted(l, key = lambda i: i['price'])
 
-def buyLowestSetOCO(client, debugMode=False):
-    balance = client.get_asset_balance(asset='BUSD') #in USD
+def buyLowestSetOCO(client, debugMode=False, coinsToBuy=5):
+    balance = float(client.get_asset_balance(asset='USDC')['free']) #in USD
 
     balance = 100 if debugMode else balance
     print("USD BALANCE IS " + str(balance))
 
     prices = client.get_all_tickers()
     toOrder = sortByLowestPriceToBuy(prices)
-    currenciesToBuy = 5
+    currenciesToBuy = coinsToBuy
     bought = 0
 
     for price in toOrder:
@@ -50,9 +51,9 @@ def buyLowestSetOCO(client, debugMode=False):
 
         try:
             if not debugMode:
-                order = client.create_oco_order(symbol=price['symbol'],side=Client.SIDE_SELL,quantity=toBuy,stopPrice=str(cost/2),price=str(cost*2))
+                order = client.order_oco_sell(symbol=price['symbol'], stopLimitTimeInForce='GTC',quantity=toBuy,stopLimitPrice=str(truncate(cost/2, 3)),stopPrice=str(truncate(cost/2, 3)),price=str(truncate(cost*2, 3)))
             else:
-                print("PRETENDING TO MAKE OCO ORDER")
+                print("DEBUG MODE ACTIVE, NOT ACTUALLY MAKING OCO")
         except BinanceAPIException as e:
             print("COULD NOT MAKE OCO ORDER, PLEASE DO MANUALLY FOR NOW")
             print(e)
@@ -72,3 +73,19 @@ def getTradables(client):
         if float(currency['free']) + float(currency['locked']) > 0:
             out.append(currency) 
     return out
+
+
+## https://kodify.net/python/math/truncate-decimals/
+def truncate(number, decimals=0):
+    """
+    Returns a value truncated to a specific number of decimal places.
+    """
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer.")
+    elif decimals < 0:
+        raise ValueError("decimal places has to be 0 or more.")
+    elif decimals == 0:
+        return math.trunc(number)
+
+    factor = 10.0 ** decimals
+    return math.trunc(number * factor) / factor
