@@ -36,7 +36,11 @@ def buyLowestSetOCO(client, debugMode=False):
         print("trying to buy " + str(toBuy) + " at " + str(cost) + " for " + str(toBuy * cost) + " USD")
 
         try:
-            order = client.create_test_order(symbol=price['symbol'], side=Client.SIDE_BUY, type=Client.ORDER_TYPE_MARKET, quantity=toBuy)
+            if debugMode:
+                print("FAKE ORDER!")
+                order = client.create_test_order(symbol=price['symbol'], side=Client.SIDE_BUY, type=Client.ORDER_TYPE_MARKET, quantity=toBuy)
+            else:
+                order = client.create_order(symbol=price['symbol'], side=Client.SIDE_BUY, type=Client.ORDER_TYPE_MARKET, quantity=toBuy)
         except BinanceAPIException as e:
             print("could not buy " + price['symbol'])
             print(e)
@@ -45,7 +49,10 @@ def buyLowestSetOCO(client, debugMode=False):
         print("CREATING OCO %200 / %50")
 
         try:
-            order = client.create_oco_order(symbol=price['symbol'],side=Client.SIDE_SELL,quantity=toBuy,stopPrice=str(cost/2),price=str(cost*2))
+            if not debugMode:
+                order = client.create_oco_order(symbol=price['symbol'],side=Client.SIDE_SELL,quantity=toBuy,stopPrice=str(cost/2),price=str(cost*2))
+            else:
+                print("PRETENDING TO MAKE OCO ORDER")
         except BinanceAPIException as e:
             print("COULD NOT MAKE OCO ORDER, PLEASE DO MANUALLY FOR NOW")
             print(e)
